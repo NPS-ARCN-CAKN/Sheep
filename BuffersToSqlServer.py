@@ -66,7 +66,7 @@ for row in cursor:
     GeneratedTransectID = row[2]
     GeneratedSurveyID = row[4]
     SegmentID = 0
-    Obs1Dir = 'Unknown'
+    Obs1Dir = 'Unk'
     PilotLastname = row[3]
     SurveyName = row[4]
     BufferFileDirectory =  layer
