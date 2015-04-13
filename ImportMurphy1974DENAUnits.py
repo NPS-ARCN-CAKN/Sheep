@@ -1,8 +1,11 @@
-__author__ = 'SDMiller'
-# basic example of opening a shapefile and then looping through the records and outputting them to console
+# This python script was used to transfer the sheep survey units devised by Murphy in 1974 in DENA from a shapefile
+# into SQL Server insert queries suitable for entering data into the ARCN-CAKN sheep monitoring database
+# Written by Scott Miller, Data Manager, National Park Service, Arctic and Central Alaska Inventory and Monitoring Networks
+# April, 2015
+
 import arcpy
 
-# Supply a path to the shapefile
+# input shapefile
 fc = "C:/Temp/MurphyProjected.shp"
 
 # Supply an output file to which to export the insert queries
