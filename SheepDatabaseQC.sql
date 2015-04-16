@@ -12,9 +12,12 @@ print ''
 print 'Section 1. Dataset_Information'
 print @uline
 
-print 'Surveys'
 
-SELECT 'Number of Survey Campaigns: ', COUNT(SurveyID) from Surveys
+
+
+
+print 'Surveys'
+SELECT 'Number of survey campaigns: ', COUNT(SurveyID) from Surveys
 
 SELECT     Surveys.Survey as [Survey Name], COUNT(Transect_or_Unit_Information.TransectID) AS Transects, MIN(Transect_or_Unit_Information.FlownDate) AS Began, 
                       MAX(Transect_or_Unit_Information.FlownDate) AS Ended, COUNT(Transect_or_Unit_Information.LegacyUnitID) AS [Count of Units]
@@ -26,6 +29,18 @@ ORDER BY Surveys.Survey
 print 'Survey Campaign Dates'
 SELECT  Distinct  Survey, StartDate
 FROM         Surveys
+
+
+
+
+
+print 'Units'
+SELECT 'Number of survey units: ', COUNT(LegacyUnitID) from LegacyUnits
+
+
+
+
+
 
 print 'Transects and Flights'
 SELECT DISTINCT 

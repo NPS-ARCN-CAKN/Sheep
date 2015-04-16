@@ -4,7 +4,7 @@ set nocount on
 
 
 
---print 'Composition counts by unit'
+print 'Composition counts by unit'
 SELECT  * FROM (
 SELECT Surveys.Survey, Transect_or_Unit_Information.LegacyUnitID AS UnitName, SUM(Animals.Ewes) AS Ewes, SUM(Animals.EweLike) AS EweLike, SUM(Animals.Lambs) AS Lambs, 
                       SUM(Animals.Rams_LessThanFullCurl) AS Rams_LessThanFullCurl, SUM(Animals.Rams_FullCurl) AS Rams_FullCurl, SUM(Animals.UnclassifiedRams) 
