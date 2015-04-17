@@ -29,13 +29,13 @@ import arcpy
 # USER MUST SUPPLY THE VARIABLES BELOW --------------------------------------------
 
 # Supply a path to the .mxd containing NPS.gdb
-NPSdotGdbMxd = "C:/Work/VitalSigns/ARCN-CAKN Dall Sheep/Data/2011/DENA2011/DENA2011_ArcGIS10_FINAL/NPS.gdb"
+NPSdotGdbMxd = r'C:\Work\VitalSigns\ARCN-CAKN Dall Sheep\Data\2011\S_WRST2011\S_WRST2011_ArcGIS10_FINAL/NPS.gdb'
 
 # Supply a directory to output the sql scripts to, the scripts will be named according to the layer they came from
-sqlscriptpath = "C:/Work/VitalSigns/ARCN-CAKN Dall Sheep/Data/2011/DENA2011/NPSDotGDBToSqlServer.pyScripts/"
+sqlscriptpath = "C:\\Work\\VitalSigns\\ARCN-CAKN Dall Sheep\\zWorking\\"
 
 # Supply the SurveyID from the Surveys table of the ARCN_Sheep database for this survey campaign.
-SurveyID = "04C117B8-ECE2-46E0-9552-FE08B51C9612" # e.g. the Itkillik 2011 Survey's SurveyID is '1AC66891-5D1E-4749-B962-40AB1BCA577F'
+SurveyID = "1B2FC2A0-FE84-42F2-BBE1-89FE940465BA" # e.g. the Itkillik 2011 Survey's SurveyID is '1AC66891-5D1E-4749-B962-40AB1BCA577F'
 # Create your Survey in the main database and substitute it here
 # -----------------------------------------------------------------------------
 
@@ -55,11 +55,34 @@ import getpass
 user = getpass.getuser()
 
 
+# function fixArcGISNullString
+# accepts: str, String to process. quote, Boolean, whether to surround the returned string with single quotes
+# returns: String
+# purpose: ArcGIS is all over the place with null values, sometimes returning blank strings, other times 'None' or '<Null>'
+# These values won't work for SQL so we need look at the value of str and determine if it should be a NULL or not.
+# If it's OK then surround with single quotes and return, otherwise return unquoted NULL.
+def fixArcGISNull( str, quoted ):
+    # first replace single quotes in the string with '' so the quote doesn't foul up the SQL
+    str = str.strip().replace("'", "''")
+    # fix the nulls
+    if str == "None": newStr = "NULL"
+    elif str == "<Null>": newStr = "NULL"
+    elif str == "NULL": newStr = "NULL"
+    elif str == "": newStr = "NULL"
+    else:
+        if quoted == False: newStr = str
+        else: newStr = "\'" + str + "\'"
+    return newStr.strip()
+
+
+
+
 
 # EXPORT THE TRANSECTS ------------------------------------------------------------------------------------------------------------
 layer = "TrnOrig"
 fc = NPSdotGdbMxd + "/" + layer
 file = open(sqlscriptpath + layer + ".sql", "w")
+print 'Processing ' + layer + "..."
 
 # write some metadata to the sql script
 file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
@@ -98,7 +121,7 @@ for row in cursor:
     PROJTD_Y1 = str(row[5])
     PROJTD_X2 = str(row[6])
     PROJTD_Y2 = str(row[7])
-    PROJECTION = str(row[8])
+    PROJECTION = row[8]
     DD_LATSEED = str(row[9])
     DD_LONGSEE = str(row[10])
     DD_LAT1 = str(row[11])
@@ -114,8 +137,7 @@ for row in cursor:
     LENGTH_MTR = str(row[21])
     ELEV_M = str(row[22])
     ELEVFT = str(row[23])
-    CNTR_NOTE = str(row[24]) + " " + str(row[34]).replace("'","''") # some comments were put in the obslnam2 field, moved to cntr_note
-    CNTR_NOTE = CNTR_NOTE.replace(",","''")
+    CNTR_NOTE = str(row[24])
     LABEL_M = str(row[25])
     LABEL_FT = str(row[26])
     GeneratedSurveyID = str(row[27])
@@ -135,6 +157,7 @@ for row in cursor:
     TEMPRTURE = str(row[41])
     TARGETLEN = str(row[42])
 
+
     # we need to insert the feature into sql server as a geography item via the Well-Known Text representation of the feature
     GeneratedTransect = row[1].WKT
 
@@ -152,38 +175,39 @@ for row in cursor:
     ",Temperature" + \
     ",TargetLength" + \
     ",Notes" + \
-    ",GeneratedTransect" + \
-    ",CenterPoint" + \
     ",GeneratedTransectID" + \
     ",FlownDate" + \
     ",Flown" + \
+    ",CenterPoint" + \
+    ",GeneratedTransect" + \
     ")" + \
     "VALUES(" + \
     "@SurveyID" + \
-    "," + ELEV_M  + \
-    ",'" + Aircraft + "'"  + \
-    ",'" + OBSLNAM1 + "'"  + \
-    ",'" + OBSLNAM2 + "'"  + \
-    ",'" + PILOTLNAM + "'"  + \
-    ",'" + PRECIP + "'"  + \
-    ",'" + TURBINT + "'"  + \
-    ",'" + TURBDUR + " " + str(row[3]) + "'"  + \
-    "," + TEMPRTURE + \
-    "," + TARGETLEN + \
-    ",'" + CNTR_NOTE.replace("'", "''") + "'"  + \
-    ", geography::STGeomFromText('" + GeneratedTransect + "', " + str(epsg) + ")" + \
+    "," + fixArcGISNull(ELEV_M,False) + \
+    "," + fixArcGISNull(Aircraft,True) + \
+    "," + fixArcGISNull(OBSLNAM1,True) + \
+    "," + fixArcGISNull(OBSLNAM2,True) + \
+    "," + fixArcGISNull(PILOTLNAM,True) + \
+    "," + fixArcGISNull(PRECIP,True) + \
+    "," + fixArcGISNull(TURBINT,True) + \
+    "," + fixArcGISNull(TURBDUR,True) + \
+    "," + fixArcGISNull(TEMPRTURE,False) + \
+    "," + fixArcGISNull(TARGETLEN,False) + \
+    "," + fixArcGISNull(CNTR_NOTE,True) + \
+    "," + fixArcGISNull(TransectID,True) + \
+    "," + fixArcGISNull(FLOWNDATE,True) + \
+    "," + fixArcGISNull(Flown,True) + \
     ", geography::STPointFromText('POINT(" + DD_LONG1 + " " + DD_LAT1 + " " + ELEV_M + ")', " + str(epsg) + ")" +  \
-    ",'" + TransectID + "'"  + \
-    ",'" + FLOWNDATE + "'"  + \
-    ",'" + Flown + "'"  + \
+    ", geography::STGeomFromText('" + GeneratedTransect + "', " + str(epsg) + ")" + \
     ");\n"
+
+
 
     file.write(insertquery) # write the query to the output file
 #  close the output file
 file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
 file.close()
-
-
+print "Done."
 
 
 
@@ -193,6 +217,7 @@ file.close()
 layer = "Animals"
 fc = NPSdotGdbMxd + "/" + layer
 file = open(sqlscriptpath + layer + ".sql", "w")
+print 'Processing ' + layer + "..."
 
 # write some metadata to the sql script
 file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
@@ -270,9 +295,10 @@ for row in cursor:
     FORMNAME = row[51]
 
     # build an insert query
+    # NOTE: There is a database column Rams1_4Curl defined as 'Number of rams with horns equal to or greater than 1/4 curl but less than 1/2 curl. These must be differentiated from ewes. They are usually 2-3 years old.'
+    # NPS.gdb however has no column matching the database column so it has been set to 0 below.
     insertquery = "INSERT INTO [ARCN_Sheep].[dbo].[Animals](" + \
         "[TransectID]" + \
-        ",[Location]" + \
         ",[PDOP]" + \
         ",[Speed]" + \
         ",[SampleDate]" + \
@@ -295,13 +321,13 @@ for row in cursor:
         ",[Rams7_8Curl]" + \
         ",[Rams1_4Curl]" + \
         ",[Rams_GT_7_8Curl]" + \
+        ",[Location]" + \
         ")" + \
         "VALUES(" + \
         "(SELECT TransectID FROM Transect_or_Unit_Information WHERE (SurveyID = '" + SurveyID + "') AND (GeneratedTransectID = " + str(TransectID) + "))" + \
-        ",geography::STPointFromText('" + Shape.WKT + "', " + str(epsg) + ")" + \
         "," + str(PDOP) + \
         "," + str(PLANESPD) + \
-        ",'" + FLOWNDATE + "'" + \
+        ",'" + FLOWNDATE.replace("None", "").replace("'", "''") + "'" + \
         "," + str(DIST2TRANS) + \
         "," + str(EWES) + \
         "," + str(EWELIKE) + \
@@ -310,23 +336,26 @@ for row in cursor:
         "," + str(GTE_FCRAMS) + \
         "," + str(UNCLSSRAMS) + \
         "," + str(UNCLSSHEEP) + \
-        ",'" + ACTIVITY + "'" + \
+        ",'" + ACTIVITY.replace("None", "").replace("'", "''") + "'" + \
         "," + str(ALTITUDE) + \
         "," + str(YEARLING) + \
         "," + str(OBJECTID_1) + \
-        ",'" + Comments.replace("'", "''") + "'" + \
-        ",'" + FORMNAME + "'" + \
+        ",'" + Comments.replace("None", "").replace("'", "''").replace("'", "''") + "'" + \
+        ",'" + FORMNAME.replace("None", "").replace("'", "''") + "'" + \
         "," + str(LT_1_2CURL) + \
         "," + str(CURL_3_4) + \
         "," + str(CURL_7_8) + \
-        "," + str(LT_1_2CURL) + \
-        "," + str(CURL_7_8) + \
+        ", 0" + \
+        "," + str(GTE_FCRAMS) + \
+        ",geography::STPointFromText('" + Shape.WKT + "', " + str(epsg) + ")" + \
         ");\n"
 
     file.write(insertquery) # write the query to the output .sql file
+
 #  close the output file
 file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
-
+file.close()
+print "Done."
 
 
 
@@ -334,6 +363,7 @@ file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing
 layer = "Tracklog"
 fc = NPSdotGdbMxd + "/" + layer
 file = open(sqlscriptpath + layer + ".sql", "w")
+print 'Processing ' + layer + "..."
 
 # write some metadata to the sql script
 file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
@@ -404,6 +434,12 @@ for row in cursor:
 #  close the output file
 file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
 file.close()
+print "Done."
+
+
+
+
+
 
 # NOTE: The code section for GPS Tracklog is commented out below because the layer can potentially contain many thousands of
 # records which can take a long time to run.  Uncomment the code as needed.
@@ -411,6 +447,8 @@ file.close()
 # layer = "GPSPointsLog"
 # fc = NPSdotGdbMxd + "/" + layer
 # file = open(sqlscriptpath + layer + ".sql", "w")
+# print 'Processing ' + layer + "..."
+
 # # write some metadata to the sql script
 # file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
 # file.write("-- File generated " + executiontime + " by " + user + "\n")
@@ -496,6 +534,8 @@ file.close()
 # layer = "Buffer_Itkillik"
 # fc = NPSdotGdbMxd + "/" + layer
 # file = open(sqlscriptpath + layer + ".sql", "w")
+# print 'Processing ' + layer + "..."
+
 # # write some metadata to the sql script
 # file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
 # file.write("-- File generated " + executiontime + " by " + user + "\n")
@@ -551,7 +591,7 @@ file.close()
 # #  close the output file
 # file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
 # file.close()
-
+# print "Done."
 
 
 
@@ -560,6 +600,8 @@ file.close()
 layer = "FlatAreas"
 fc = NPSdotGdbMxd + "/" + layer
 file = open(sqlscriptpath + layer + ".sql", "w")
+print 'Processing ' + layer + "..."
+
 # write some metadata to the sql script
 file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
 file.write("-- File generated " + executiontime + " by " + user + "\n")
@@ -604,3 +646,6 @@ for row in cursor:
 #  close the output file
 file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
 file.close()
+print "Done."
+print "Finished processing " + NPSdotGdbMxd
+
