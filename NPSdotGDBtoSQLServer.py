@@ -35,7 +35,8 @@ NPSdotGdbMxd = r'C:\Work\VitalSigns\ARCN-CAKN Dall Sheep\Data\2011\S_WRST2011\S_
 sqlscriptpath = "C:\\Work\\VitalSigns\\ARCN-CAKN Dall Sheep\\zWorking\\"
 
 # Supply the SurveyID from the Surveys table of the ARCN_Sheep database for this survey campaign.
-SurveyID = "1B2FC2A0-FE84-42F2-BBE1-89FE940465BA" # e.g. the Itkillik 2011 Survey's SurveyID is '1AC66891-5D1E-4749-B962-40AB1BCA577F'
+# e.g. the Itkillik 2011 Survey's SurveyID is '1AC66891-5D1E-4749-B962-40AB1BCA577F'
+SurveyID = "1B2FC2A0-FE84-42F2-BBE1-89FE940465BA"
 # Create your Survey in the main database and substitute it here
 # -----------------------------------------------------------------------------
 
@@ -61,18 +62,28 @@ user = getpass.getuser()
 # purpose: ArcGIS is all over the place with null values, sometimes returning blank strings, other times 'None' or '<Null>'
 # These values won't work for SQL so we need look at the value of str and determine if it should be a NULL or not.
 # If it's OK then surround with single quotes and return, otherwise return unquoted NULL.
-def fixArcGISNull( str, quoted ):
+def fixArcGISNull(inputString, quoted, nullToZero):
+    "function fixArcGISNullString + \
+    accepts: str, String to process. quote, Boolean, whether to surround the returned string with single quotes + \
+    returns: String  + \
+    purpose: ArcGIS is all over the place with null values, sometimes returning blank strings, other times 'None' or '<Null>'  + \
+    These values won't work for SQL so we need look at the value of str and determine if it should be a NULL or not. + \
+    If it's OK then surround with single quotes and return, otherwise return unquoted NULL." + "\'"
+
     # first replace single quotes in the string with '' so the quote doesn't foul up the SQL
-    str = str.strip().replace("'", "''")
+    inputString = str(inputString).strip().replace("'", "''")
     # fix the nulls
-    if str == "None": newStr = "NULL"
-    elif str == "<Null>": newStr = "NULL"
-    elif str == "NULL": newStr = "NULL"
-    elif str == "": newStr = "NULL"
+    if inputString == "None" or inputString == "<Null>" or inputString == "NULL" or inputString == "": newStr = "NULL"
     else:
-        if quoted == False: newStr = str
-        else: newStr = "\'" + str + "\'"
-    return newStr.strip()
+        if quoted == False: newStr = inputString
+        else: newStr = "\'" + inputString + "\'"
+
+    # some strings should return a zero instead of null, if so change the NULL to a zero
+    if (newStr == "NULL") and (nullToZero == True):
+        newStr = "0"
+
+    # return the processed string
+    return newStr
 
 
 
@@ -183,20 +194,20 @@ for row in cursor:
     ")" + \
     "VALUES(" + \
     "@SurveyID" + \
-    "," + fixArcGISNull(ELEV_M,False) + \
-    "," + fixArcGISNull(Aircraft,True) + \
-    "," + fixArcGISNull(OBSLNAM1,True) + \
-    "," + fixArcGISNull(OBSLNAM2,True) + \
-    "," + fixArcGISNull(PILOTLNAM,True) + \
-    "," + fixArcGISNull(PRECIP,True) + \
-    "," + fixArcGISNull(TURBINT,True) + \
-    "," + fixArcGISNull(TURBDUR,True) + \
-    "," + fixArcGISNull(TEMPRTURE,False) + \
-    "," + fixArcGISNull(TARGETLEN,False) + \
-    "," + fixArcGISNull(CNTR_NOTE,True) + \
-    "," + fixArcGISNull(TransectID,True) + \
-    "," + fixArcGISNull(FLOWNDATE,True) + \
-    "," + fixArcGISNull(Flown,True) + \
+    "," + fixArcGISNull(ELEV_M,False, False) + \
+    "," + fixArcGISNull(Aircraft,True, False) + \
+    "," + fixArcGISNull(OBSLNAM1,True, False) + \
+    "," + fixArcGISNull(OBSLNAM2,True, False) + \
+    "," + fixArcGISNull(PILOTLNAM,True, False) + \
+    "," + fixArcGISNull(PRECIP,True, False) + \
+    "," + fixArcGISNull(TURBINT,True, False) + \
+    "," + fixArcGISNull(TURBDUR,True, False) + \
+    "," + fixArcGISNull(TEMPRTURE,False, False) + \
+    "," + fixArcGISNull(TARGETLEN,False, False) + \
+    "," + fixArcGISNull(CNTR_NOTE,True, False) + \
+    "," + fixArcGISNull(TransectID,True, False) + \
+    "," + fixArcGISNull(FLOWNDATE,True, False) + \
+    "," + fixArcGISNull(Flown,True, False) + \
     ", geography::STPointFromText('POINT(" + DD_LONG1 + " " + DD_LAT1 + " " + ELEV_M + ")', " + str(epsg) + ")" +  \
     ", geography::STGeomFromText('" + GeneratedTransect + "', " + str(epsg) + ")" + \
     ");\n"
@@ -325,26 +336,26 @@ for row in cursor:
         ")" + \
         "VALUES(" + \
         "(SELECT TransectID FROM Transect_or_Unit_Information WHERE (SurveyID = '" + SurveyID + "') AND (GeneratedTransectID = " + str(TransectID) + "))" + \
-        "," + str(PDOP) + \
-        "," + str(PLANESPD) + \
-        ",'" + FLOWNDATE.replace("None", "").replace("'", "''") + "'" + \
-        "," + str(DIST2TRANS) + \
-        "," + str(EWES) + \
-        "," + str(EWELIKE) + \
-        "," + str(LAMBS) + \
-        "," + str(LT_FCRAMS) + \
-        "," + str(GTE_FCRAMS) + \
-        "," + str(UNCLSSRAMS) + \
-        "," + str(UNCLSSHEEP) + \
-        ",'" + ACTIVITY.replace("None", "").replace("'", "''") + "'" + \
-        "," + str(ALTITUDE) + \
-        "," + str(YEARLING) + \
-        "," + str(OBJECTID_1) + \
-        ",'" + Comments.replace("None", "").replace("'", "''").replace("'", "''") + "'" + \
-        ",'" + FORMNAME.replace("None", "").replace("'", "''") + "'" + \
-        "," + str(LT_1_2CURL) + \
-        "," + str(CURL_3_4) + \
-        "," + str(CURL_7_8) + \
+        "," + fixArcGISNull(str(PDOP), False, False) + \
+        "," + fixArcGISNull(str(PLANESPD), False, False) + \
+        "," + fixArcGISNull(str(DATE_), True, False) + \
+        "," + fixArcGISNull(str(DIST2TRANS), False, False) + \
+        "," + fixArcGISNull(EWES, False, True) + \
+        "," + fixArcGISNull(EWELIKE, False, True) + \
+        "," + fixArcGISNull(LAMBS, False, True) + \
+        "," + fixArcGISNull(LT_FCRAMS, False, True) + \
+        "," + fixArcGISNull(GTE_FCRAMS, False, True) + \
+        "," + fixArcGISNull(UNCLSSRAMS, False, True) + \
+        "," + fixArcGISNull(UNCLSSHEEP, False, True) + \
+        "," + fixArcGISNull(str(ACTIVITY), True, False) + \
+        "," + fixArcGISNull(ALTITUDE, False, False) + \
+        "," + fixArcGISNull(YEARLING, False, True) + \
+        "," + fixArcGISNull(OBJECTID_1,False,False) + \
+        "," + fixArcGISNull(str(Comments), True, False) + \
+        "," + fixArcGISNull(str(FORMNAME),True, False) + \
+        "," + fixArcGISNull(LT_1_2CURL, False, True) + \
+        "," + fixArcGISNull(CURL_3_4, False, True) + \
+        "," + fixArcGISNull(CURL_7_8, False, True) + \
         ", 0" + \
         "," + str(GTE_FCRAMS) + \
         ",geography::STPointFromText('" + Shape.WKT + "', " + str(epsg) + ")" + \
@@ -444,88 +455,97 @@ print "Done."
 # NOTE: The code section for GPS Tracklog is commented out below because the layer can potentially contain many thousands of
 # records which can take a long time to run.  Uncomment the code as needed.
 # GPS Tracklog ------------------------------------------------------------------------------------------------------------
-# layer = "GPSPointsLog"
-# fc = NPSdotGdbMxd + "/" + layer
-# file = open(sqlscriptpath + layer + ".sql", "w")
-# print 'Processing ' + layer + "..."
+layer = "GPSPointsLog"
+fc = NPSdotGdbMxd + "/" + layer
+file = open(sqlscriptpath + layer + ".sql", "w")
+print 'Processing ' + layer + "..."
 
-# # write some metadata to the sql script
-# file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
-# file.write("-- File generated " + executiontime + " by " + user + "\n")
-# file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: sqlcmd /S YOURSQLSERVER\INSTANCENAME /i ""C:\Your Script.sql""\n")
-# file.write("USE ARCN_Sheep \n")
-# file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
-# file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
-# file.write("DECLARE @SurveyID nvarchar(50) -- SurveyID of the record in the Surveys table to which the transects below will be related\n")
-# file.write("SET @SurveyID = '" + SurveyID + "'\n")
-#
-# fieldsList = arcpy.ListFields(fc) #get the fields
-# fields = [] # create an empty list
-# #  loop through the fields and change the Shape column (containing geometry) into a token, add columns to the list
-# for field in fieldsList:
-#     if field.name == "Shape":
-#         fields.append("Shape@")
-#     elif field.name == "SHAPE":
-#         fields.append("SHAPE@")
-#     else:
-#         fields.append(field.name)
-#
-# # get the data into a cursor so we can translate it into sql to insert into the sheep sql server database
-# # loop through the cursor and save fields as variables to be used later in insert queries
-# cursor = arcpy.da.SearchCursor(fc,fields,"",sr)
-# for row in cursor:
-#     OBJECTID = row[0]
-#     SHAPE = row[1]
-#     DATE_ = row[2]
-#     ALTITUDE = row[3]
-#     LATITUDE = row[4]
-#     LONGITUDE = row[5]
-#     XCOORD = row[6]
-#     YCOORD = row[7]
-#     PDOP = row[8]
-#     PLANESPD = row[9]
-#     TIME_ = row[10]
-#     GeneratedSurveyID = row[11]
-#     PILOTLNAM = row[12]
-#     AIRCRAFT = row[13]
-#
-#     # build an insert query
-#     # notes:
-#     # GPSModel,Source, SourceFileName, TracksFileDirectory and Comment don't appear in NPS.gdb
-#     # Most of the time GPS track logs will use point features.  If the tracklog is a line feature then
-#     # modify the script to put the line into LineFeature instead of PointFeature
-#     insertquery = "INSERT INTO GPSTracks(" + \
-#         "PilotName," + \
-#         "CaptureDate," + \
-#         "GPSModel," + \
-#         "Altitude," + \
-#         "Source," + \
-#         "SourceFileName," + \
-#         "TracksFileDirectory," + \
-#         "Comment," + \
-#         "LineFeature," + \
-#         "PointFeature," + \
-#         "SurveyID" + \
-#         ")" + \
-#         "VALUES(" + \
-#         "'" + PILOTLNAM + "'," + \
-#         "'" + DATE_ + " " + TIME_ + "'," + \
-#         "NULL," + \
-#         str(ALTITUDE) + "," + \
-#         "'" + fc + "'," + \
-#         "'" + fc + "'," + \
-#         "NULL," + \
-#         "'" + str(Comments) + "'," + \
-#         "NULL," + \
-#         "geography::STGeomFromText('" + SHAPE.WKT + "', " + str(epsg) + ")," + \
-#         "@SurveyID" + \
-#         ");\n"
-#
-#     file.write(insertquery) # write the query to the output .sql file
-#
-# # close the output file
-# file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
-# file.close()
+# write some metadata to the sql script
+file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
+file.write("-- File generated " + executiontime + " by " + user + "\n")
+file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: sqlcmd /S YOURSQLSERVER\INSTANCENAME /i ""C:\Your Script.sql""\n")
+file.write("USE ARCN_Sheep \n")
+file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
+file.write("DECLARE @SurveyID nvarchar(50) -- SurveyID of the record in the Surveys table to which the transects below will be related\n")
+file.write("SET @SurveyID = '" + SurveyID + "'\n")
+
+fieldsList = arcpy.ListFields(fc) #get the fields
+fields = [] # create an empty list
+#  loop through the fields and change the Shape column (containing geometry) into a token, add columns to the list
+for field in fieldsList:
+    if field.name == "Shape":
+        fields.append("Shape@")
+    elif field.name == "SHAPE":
+        fields.append("SHAPE@")
+    else:
+        fields.append(field.name)
+
+# get the data into a cursor so we can translate it into sql to insert into the sheep sql server database
+# loop through the cursor and save fields as variables to be used later in insert queries
+cursor = arcpy.da.SearchCursor(fc,fields,"",sr)
+for row in cursor:
+    OBJECTID = row[0]
+    SHAPE = row[1]
+    DATE_ = row[2]
+    ALTITUDE = row[3]
+    LATITUDE = row[4]
+    LONGITUDE = row[5]
+    XCOORD = row[6]
+    YCOORD = row[7]
+    PDOP = row[8]
+    PLANESPD = row[9]
+    TIME_ = row[10]
+    GeneratedSurveyID = row[11]
+    PILOTLNAM = row[12]
+    AIRCRAFT = row[13]
+    HitDate =  DATE_ + " " + TIME_
+
+    if not SHAPE is None:
+        WKT = SHAPE.WKT
+    else:
+        WKT = "NULL"
+    geog = "geography::STGeomFromText('" + WKT + "', " + str(epsg) + ")"
+
+    print str(OBJECTID) +  " " + WKT
+
+    # build an insert query
+    # notes:
+    # GPSModel,Source, SourceFileName, TracksFileDirectory and Comment don't appear in NPS.gdb
+    # Most of the time GPS track logs will use point features.  If the tracklog is a line feature then
+    # modify the script to put the line into LineFeature instead of PointFeature
+    insertquery = "INSERT INTO GPSTracks(" + \
+        "PilotName," + \
+        "CaptureDate," + \
+        "GPSModel," + \
+        "Altitude," + \
+        "Source," + \
+        "SourceFileName," + \
+        "TracksFileDirectory," + \
+        "Comment," + \
+        "LineFeature," + \
+        "PointFeature," + \
+        "SurveyID" + \
+        ")" + \
+        "VALUES(" + \
+        fixArcGISNull(PILOTLNAM, True,False) +  \
+        "," + fixArcGISNull(HitDate, True, False)  + \
+        ", NULL" + \
+        "," + fixArcGISNull(str(ALTITUDE), False, True) + \
+        ",'" + fc + "'" + \
+        ",'" + fc + "'" + \
+        ", NULL" + \
+        "," + fixArcGISNull(str(Comments), True, False) + \
+        ", NULL" + \
+        "," + geog  + \
+        ",@SurveyID" + \
+        ");\n"
+
+    file.write(insertquery) # write the query to the output .sql file
+
+# close the output file
+file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.close()
 
 
 
