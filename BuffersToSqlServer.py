@@ -10,13 +10,20 @@ import arcpy
 
 # USER MUST SUPPLY THE VARIABLES BELOW --------------------------------------------
 
-# Supply a directory to output the sql scripts to, the scripts will be named according to the layer they came from
-sqlscriptpath = "C:/Work/VitalSigns/ARCN-CAKN Dall Sheep/Data/2011/DENA2011/NPSDotGDBToSqlServer.pyScripts/"
+# source shapefile of the survey buffers
+bufferfile = arcpy.GetParameterAsText(0)
+
+# directory where the sql script will be created
+outputfile = arcpy.GetParameterAsText(1)
 
 # Supply the SurveyID from the Surveys table of the ARCN_Sheep database for this survey campaign.
-SurveyID = "04C117B8-ECE2-46E0-9552-FE08B51C9612" # e.g. the Itkillik 2011 Survey's SurveyID is '1AC66891-5D1E-4749-B962-40AB1BCA577F'
-# Create your Survey in the main database and substitute it here
-# -----------------------------------------------------------------------------
+#  e.g. the Itkillik 2011 Survey's SurveyID is '1AC66891-5D1E-4749-B962-40AB1BCA577F'
+SurveyID = arcpy.GetParameterAsText(2)
+
+# echo the parameters
+arcpy.AddMessage("Buffer file: " + bufferfile)
+arcpy.AddMessage("Output file: " + outputfile)
+arcpy.AddMessage("SurveyID: " + SurveyID)
 
 # spatial coordinate system
 # the data in the output sql script will be in the reference system indicated below
@@ -34,14 +41,17 @@ import getpass
 user = getpass.getuser()
 
 # Buffers ------------------------------------------------------------------------------------------------------------
-# NOTE: Buffers are ordinarily in a shapefile instead of NPS.gdb.  Uncomment the section below if they happen to be in the gdb.
-layer = "DENA2011_663mBuff_Ed2_Dissvd_Areas.shp"
-fc = "C:/Work/VitalSigns/ARCN-CAKN Dall Sheep/Data/2011/DENA2011/DENA2011_ArcGIS10_FINAL/" + layer
-file = open(sqlscriptpath + layer + ".sql", "w")
+arcpy.AddMessage("Processing: " + outputfile)
+file = open(outputfile, "w")
 
 # write some metadata to the sql script
-file.write("-- Insert queries to transfer data from ARCN Sheep monitoring buffers shapefile " + layer + " into ARCN_Sheep database\n")
+file.write("-- Insert queries to transfer data from ARCN Sheep monitoring buffers shapefile " + fc + " into ARCN_Sheep database\n")
 file.write("-- File generated " + executiontime + " by " + user + "\n")
+
+file.write("-- Input buffer file: " + bufferfile + "\n")
+file.write("-- Output file: " + outputfile + "\n")
+file.write("-- SurveyID: " + SurveyID + "\n")
+
 file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: sqlcmd /S YOURSQLSERVER\INSTANCENAME /i ""C:\Your Script.sql""\n")
 file.write("USE ARCN_Sheep \n")
 file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
@@ -90,9 +100,10 @@ for row in cursor:
         "'" + BufferFileDirectory + "'" + \
         ");\n"
 
-    print insertquery # print the query to standard output
+    # print insertquery # print the query to standard output
     file.write(insertquery) # write the query to the output .sql file
 
 #  close the output file
 file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
 file.close()
+arcpy.AddMessage('Output written to ' + outputfile)
