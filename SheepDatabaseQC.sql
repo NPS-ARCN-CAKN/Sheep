@@ -34,12 +34,20 @@ print 'Units'
 SELECT 'Number of survey units: ', COUNT(LegacyUnitID) from LegacyUnits
 
 print 'Data import status (accounting of records imported from each layer of NPS.gdb)'
+	
 	print 'Transects (NPS.gdb\TrnOrig)'
 	SELECT     TOP (100) PERCENT Surveys.Survey, COUNT(Transect_or_Unit_Information.TransectID) AS Transects
 	FROM         Surveys LEFT OUTER JOIN
 						  Transect_or_Unit_Information ON Surveys.SurveyID = Transect_or_Unit_Information.SurveyID
 	GROUP BY Surveys.Survey
 	ORDER BY Surveys.Survey
+	
+	print 'Transect points (NPS.gdb\TrnPoints)'
+	SELECT     TOP (100) PERCENT Surveys.Survey, COUNT(TransectPoints.TransectPointID) AS Expr1
+FROM         Surveys LEFT OUTER JOIN
+                      TransectPoints ON Surveys.SurveyID = TransectPoints.SurveyID
+GROUP BY Surveys.Survey
+ORDER BY Surveys.Survey
 	
 	print 'Sheep groups (NPS.gdb\Animals)'
 	SELECT     TOP (100) PERCENT Surveys.Survey, COUNT(Animals.SheepGroupID) AS SheepGroups
