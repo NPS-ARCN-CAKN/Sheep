@@ -92,7 +92,7 @@ def fixArcGISNull(inputString, quoted, nullToZero):
 # EXPORT THE TRANSECTS ------------------------------------------------------------------------------------------------------------
 layer = "TrnOrig"
 fc = NPSdotGdbMxd + "/" + layer
-file = open(sqlscriptpath + layer + ".sql", "w")
+file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
 print 'Processing ' + layer + "..."
 
 # write some metadata to the sql script
@@ -212,8 +212,6 @@ for row in cursor:
     ", geography::STGeomFromText('" + GeneratedTransect + "', " + str(epsg) + ")" + \
     ");\n"
 
-
-
     file.write(insertquery) # write the query to the output file
 #  close the output file
 file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
@@ -286,26 +284,20 @@ for row in cursor:
     else:
         HASTRANS = 0
 
-    # we need to insert the feature into sql server as a geography item via the Well-Known Text representation of the feature
-    GeneratedTransect = row[1].WKT
-
     # build an insert query
     insertquery = "INSERT INTO [ARCN_Sheep].[dbo].[TransectPoints](" + \
         "[SurveyID]," + \
         "[Elev_M]," + \
         "[HasTransect]," + \
-        "[Notes]," + \
         "[GeneratedSurveyID]," + \
         "[TransectPoint]" + \
     ")" + \
     "VALUES(" + \
     "@SurveyID" + \
-    "," + fixArcGISNull(SurveyID,True, False) + \
     "," + fixArcGISNull(ELEV_M,False, False) + \
     "," + fixArcGISNull(HASTRANS,False, True) + \
     "," + fixArcGISNull(GeneratedSurveyID,True, False) + \
-    "geography::STGeomFromText('" + Shape.WKT + "', " + str(epsg) + ")" + \
-    ", geography::STGeomFromText('" + GeneratedTransect + "', " + str(epsg) + ")" + \
+    ",geography::STGeomFromText('" + Shape.WKT + "', " + str(epsg) + ")" + \
     ");\n"
 
     file.write(insertquery) # write the query to the output file
@@ -330,7 +322,7 @@ print "Done."
 # ANIMALS - ------------------------------------------------------------------------------------------------------------
 layer = "Animals"
 fc = NPSdotGdbMxd + "/" + layer
-file = open(sqlscriptpath + layer + ".sql", "w")
+file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
 print 'Processing ' + layer + "..."
 
 # write some metadata to the sql script
@@ -476,7 +468,7 @@ print "Done."
 # TRACKLOG ------------------------------------------------------------------------------------------------------------
 layer = "Tracklog"
 fc = NPSdotGdbMxd + "/" + layer
-file = open(sqlscriptpath + layer + ".sql", "w")
+file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
 print 'Processing ' + layer + "..."
 
 # write some metadata to the sql script
@@ -563,7 +555,7 @@ print "Done."
 # GPS Tracklog ------------------------------------------------------------------------------------------------------------
 # layer = "GPSPointsLog"
 # fc = NPSdotGdbMxd + "/" + layer
-# file = open(sqlscriptpath + layer + ".sql", "w")
+# file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
 # print 'Processing ' + layer + "..."
 #
 # # write some metadata to the sql script
@@ -657,7 +649,7 @@ print "Done."
 # NOTE: Buffers are ordinarily in a shapefile instead of NPS.gdb.  Uncomment the section below if they happen to be in the gdb.
 # layer = "Buffer_Itkillik"
 # fc = NPSdotGdbMxd + "/" + layer
-# file = open(sqlscriptpath + layer + ".sql", "w")
+# file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
 # print 'Processing ' + layer + "..."
 
 # # write some metadata to the sql script
@@ -723,7 +715,7 @@ print "Done."
 # FlatAreas ------------------------------------------------------------------------------------------------------------
 layer = "FlatAreas"
 fc = NPSdotGdbMxd + "/" + layer
-file = open(sqlscriptpath + layer + ".sql", "w")
+file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
 print 'Processing ' + layer + "..."
 
 # write some metadata to the sql script
@@ -772,4 +764,6 @@ file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing
 file.close()
 print "Done."
 print "Finished processing " + NPSdotGdbMxd
+
+print "SQL insert query scripts are available at " + sqlscriptpath.replace("/","\\")
 
