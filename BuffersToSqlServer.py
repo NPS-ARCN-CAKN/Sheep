@@ -20,6 +20,12 @@ outputfile = arcpy.GetParameterAsText(1)
 #  e.g. the Itkillik 2011 Survey's SurveyID is '1AC66891-5D1E-4749-B962-40AB1BCA577F'
 SurveyID = arcpy.GetParameterAsText(2)
 
+#  Standard operating procedure number of the SOP guiding the generation/collection of buffers (from sheep monitoring protocol)
+SOPNumber = arcpy.GetParameterAsText(3)
+
+#  Version number of the SOP guiding the generation/collection of buffers (from sheep monitoring protocol)
+SOPVersion = arcpy.GetParameterAsText(4)
+
 # echo the parameters
 arcpy.AddMessage("Buffer file: " + bufferfile)
 arcpy.AddMessage("Output file: " + outputfile)
@@ -45,7 +51,7 @@ arcpy.AddMessage("Processing: " + outputfile)
 file = open(outputfile, "w")
 
 # write some metadata to the sql script
-file.write("-- Insert queries to transfer data from ARCN Sheep monitoring buffers shapefile " + fc + " into ARCN_Sheep database\n")
+file.write("-- Insert queries to transfer data from ARCN Sheep monitoring buffers shapefile " + bufferfile + " into ARCN_Sheep database\n")
 file.write("-- File generated " + executiontime + " by " + user + "\n")
 
 file.write("-- Input buffer file: " + bufferfile + "\n")
@@ -55,9 +61,9 @@ file.write("-- SurveyID: " + SurveyID + "\n")
 file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: sqlcmd /S YOURSQLSERVER\INSTANCENAME /i ""C:\Your Script.sql""\n")
 file.write("USE ARCN_Sheep \n")
 file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
-file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
+file.write("\n-- insert the buffers from " + bufferfile + " -----------------------------------------------------------\n")
 
-fieldsList = arcpy.ListFields(fc) #get the fields
+fieldsList = arcpy.ListFields(bufferfile) #get the fields
 fields = [] # create an empty list
 #  loop through the fields and change the Shape column (containing geometry) into a token, add columns to the list
 for field in fieldsList:
@@ -70,16 +76,21 @@ for field in fieldsList:
 
 # get the data into a cursor so we can translate it into sql to insert into the sheep sql server database
 # loop through the cursor and save fields as variables to be used later in insert queries
-cursor = arcpy.da.SearchCursor(fc,fields,"",sr)
+cursor = arcpy.da.SearchCursor(bufferfile,fields,"",sr)
 for row in cursor:
-    SHAPE = row[1]
+    FID = row[0]
+    Shape = row[1]
     GeneratedTransectID = row[2]
-    GeneratedSurveyID = row[4]
-    SegmentID = 0
-    Obs1Dir = 'Unk'
-    PilotLastname = row[3]
+    PilotLNam = row[3]
     SurveyName = row[4]
-    BufferFileDirectory =  layer
+    F_AREA = row[5]
+
+    # file.write(FID + " 2 " + GeneratedTransectID + " 3 " + PilotLNam  + " 4 " + SurveyName  + " 5 " + F_AREA)
+    # loop through the fields and output them
+    # i = 0
+    # for field in fieldsList:
+    #     arcpy.AddMessage(field.name + " = row[" + str(i) + "]")
+    #     i = i + 1
 
     # build an insert query
     insertquery = "INSERT INTO Buffers(" + \
@@ -89,15 +100,19 @@ for row in cursor:
         "SegmentID," + \
         "Obs1Dir," + \
         "PolygonFeature," + \
-        "BufferFileDirectory" + \
+        "BufferFileDirectory," + \
+        "SOPNumber," + \
+        "SOPVersion" + \
         ") VALUES(" + \
         "(SELECT TransectID FROM Transect_or_Unit_Information WHERE (SurveyID = '" + SurveyID + "' And GeneratedTransectID = " + str(GeneratedTransectID) + "))," + \
         "'" + str(GeneratedTransectID) + "'," + \
-        "'" + str(GeneratedSurveyID) + "'," + \
-        "'" + str(SegmentID) + "'," + \
-        "'" + str(Obs1Dir) + "'," + \
-        "geography::STGeomFromText('" + SHAPE.WKT + "', " + str(epsg) + ")," + \
-        "'" + BufferFileDirectory + "'" + \
+        "'" + str(SurveyID) + "'," + \
+        "NULL," + \
+        "NULL," + \
+        "geography::STGeomFromText('" + Shape.WKT + "', " + str(epsg) + ")," + \
+        "'" + bufferfile + "'," + \
+        SOPNumber + "," + \
+        SOPVersion +  \
         ");\n"
 
     # print insertquery # print the query to standard output
