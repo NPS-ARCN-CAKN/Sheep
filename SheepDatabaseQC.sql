@@ -20,10 +20,10 @@ print 'Surveys'
 SELECT 'Number of survey campaigns: ', COUNT(SurveyID) from Surveys
 
 SELECT     Surveys.Survey AS [Survey Name], COUNT(Transect_or_Unit_Information.TransectID) AS Transects, MIN(Transect_or_Unit_Information.FlownDate) AS Began, 
-                      MAX(Transect_or_Unit_Information.FlownDate) AS Ended, COUNT(Transect_or_Unit_Information.LegacyUnitID) AS [Count of Units]
+                      MAX(Transect_or_Unit_Information.FlownDate) AS Ended, COUNT(Transect_or_Unit_Information.LegacyUnitID) AS [Count of Units], Surveys.SurveyID
 FROM         Surveys LEFT OUTER JOIN
                       Transect_or_Unit_Information ON Surveys.SurveyID = Transect_or_Unit_Information.SurveyID
-GROUP BY Surveys.Survey
+GROUP BY Surveys.Survey, Surveys.SurveyID
 ORDER BY [Survey Name]
 
 print 'Survey Campaign Dates'
