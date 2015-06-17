@@ -85,13 +85,6 @@ for row in cursor:
     SurveyName = row[4]
     F_AREA = row[5]
 
-    # file.write(FID + " 2 " + GeneratedTransectID + " 3 " + PilotLNam  + " 4 " + SurveyName  + " 5 " + F_AREA)
-    # loop through the fields and output them
-    # i = 0
-    # for field in fieldsList:
-    #     arcpy.AddMessage(field.name + " = row[" + str(i) + "]")
-    #     i = i + 1
-
     # build an insert query
     insertquery = "INSERT INTO Buffers(" + \
         "TransectID," + \
