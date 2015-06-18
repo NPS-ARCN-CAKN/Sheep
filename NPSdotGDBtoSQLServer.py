@@ -25,20 +25,28 @@
 
 # import the arcpy library
 import arcpy
+import os
 
 # USER MUST SUPPLY THE VARIABLES BELOW --------------------------------------------
 
-# Supply a path to the .mxd containing NPS.gdb
-NPSdotGdbMxd = r'C:\Work\VitalSigns\ARCN-CAKN Dall Sheep\Data\2011\WEAR2011\WEAR2011_7_5kmgrid_ArcGIS10_FINAL\NPS.gdb'
+# Supply a path to the .mxd containing NPS.gdb workspace
+NPSdotGdbMxd = arcpy.GetParameterAsText(0)
 
 # Supply a directory to output the sql scripts to, the scripts will be named according to the layer they came from
-sqlscriptpath = 'C:/Work/VitalSigns/ARCN-CAKN Dall Sheep/Data/2011/WEAR2011/WEAR2011_7_5kmgrid_ArcGIS10_FINAL/'
+sqlscriptpath = os.path.dirname(NPSdotGdbMxd) + '/'
 
 # Supply the SurveyID from the Surveys table of the ARCN_Sheep database for this survey campaign.
 # e.g. the Itkillik 2011 Survey's SurveyID is '1AC66891-5D1E-4749-B962-40AB1BCA577F'
-SurveyID = "31A2F280-6794-4ECB-9F40-2D04352B17EA"
-# Create your Survey in the main database and substitute it here
+# Contact the Network data manager for this value
+SurveyID = arcpy.GetParameterAsText(1)
+
 # -----------------------------------------------------------------------------
+
+# echo the parameters
+arcpy.AddMessage("Input geodatabase: " + NPSdotGdbMxd)
+arcpy.AddMessage("Output directory: " + sqlscriptpath)
+arcpy.AddMessage("SurveyID: " + SurveyID)
+
 
 # spatial coordinate system
 # the data in the output sql script will be in the reference system indicated below
@@ -762,8 +770,13 @@ for row in cursor:
 #  close the output file
 file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
 file.close()
-print "Done."
-print "Finished processing " + NPSdotGdbMxd
 
-print "SQL insert query scripts are available at " + sqlscriptpath.replace("/","\\")
+arcpy.AddMessage("Done!")
+arcpy.AddMessage("Finished processing " + NPSdotGdbMxd)
+arcpy.AddMessage("Input geodatabase: " + NPSdotGdbMxd)
+arcpy.AddMessage("Output directory: " + sqlscriptpath)
+arcpy.AddMessage("SurveyID: " + SurveyID)
+
+arcpy.AddMessage("")
+arcpy.AddMessage("Your SQL insert query scripts are available at " + sqlscriptpath.replace("/","\\"))
 
