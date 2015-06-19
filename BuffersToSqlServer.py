@@ -7,6 +7,7 @@
 
 # import the arcpy library
 import arcpy
+import os
 
 # USER MUST SUPPLY THE VARIABLES BELOW --------------------------------------------
 
@@ -14,17 +15,17 @@ import arcpy
 bufferfile = arcpy.GetParameterAsText(0)
 
 # directory where the sql script will be created
-outputfile = arcpy.GetParameterAsText(1)
+outputfile  = bufferfile + '.sql'
 
 # Supply the SurveyID from the Surveys table of the ARCN_Sheep database for this survey campaign.
 #  e.g. the Itkillik 2011 Survey's SurveyID is '1AC66891-5D1E-4749-B962-40AB1BCA577F'
-SurveyID = arcpy.GetParameterAsText(2)
+SurveyID = arcpy.GetParameterAsText(1)
 
 #  Standard operating procedure number of the SOP guiding the generation/collection of buffers (from sheep monitoring protocol)
-SOPNumber = arcpy.GetParameterAsText(3)
+SOPNumber = arcpy.GetParameterAsText(2)
 
 #  Version number of the SOP guiding the generation/collection of buffers (from sheep monitoring protocol)
-SOPVersion = arcpy.GetParameterAsText(4)
+SOPVersion = arcpy.GetParameterAsText(3)
 
 # echo the parameters
 arcpy.AddMessage("Buffer file: " + bufferfile)
