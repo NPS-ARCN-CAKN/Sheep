@@ -106,8 +106,10 @@ arcpy.AddMessage('Processing ' + layer + "...")
 # write some metadata to the sql script
 file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
 file.write("-- File generated " + executiontime + " by " + user + "\n")
-file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: \n-- sqlcmd /S YOURSQLSERVER\INSTANCENAME /i """ + str(file.name) + """\n")
+file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
+file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
 file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.write("SET QUOTED_IDENTIFIER ON\n\n")
 file.write("\n-- insert the generated transects from " + layer + " -----------------------------------------------------------\n")
 file.write("DECLARE @SurveyID nvarchar(50) -- SurveyID of the record in the Surveys table to which the transects below will be related\n")
 file.write("SET @SurveyID = '" + SurveyID + "'\n")
@@ -243,8 +245,10 @@ arcpy.AddMessage('Processing ' + layer + "...")
 # write some metadata to the sql script
 file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
 file.write("-- File generated " + executiontime + " by " + user + "\n")
-file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: \n-- sqlcmd /S YOURSQLSERVER\INSTANCENAME /i " + str(file.name) + "\n")
+file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
+file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
 file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.write("SET QUOTED_IDENTIFIER ON\n\n")
 file.write("\n-- insert the generated transects from " + layer + " -----------------------------------------------------------\n")
 file.write("DECLARE @SurveyID nvarchar(50) -- SurveyID of the record in the Surveys table to which the transects below will be related\n")
 file.write("SET @SurveyID = '" + SurveyID + "'\n")
@@ -334,9 +338,11 @@ arcpy.AddMessage('Processing ' + layer + "...")
 # write some metadata to the sql script
 file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
 file.write("-- File generated " + executiontime + " by " + user + "\n")
-file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: \n-- sqlcmd /S YOURSQLSERVER\INSTANCENAME /i " + str(file.name) + "\n")
+file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
+file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
 file.write("USE ARCN_Sheep \n")
 file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.write("SET QUOTED_IDENTIFIER ON\n\n")
 file.write("\n-- insert the animals from " + layer + " -----------------------------------------------------------\n")
 
 # make a fields list for the layer
@@ -480,9 +486,11 @@ arcpy.AddMessage('Processing ' + layer + "...")
 # write some metadata to the sql script
 file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
 file.write("-- File generated " + executiontime + " by " + user + "\n")
-file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: \n-- sqlcmd /S YOURSQLSERVER\INSTANCENAME /i " + str(file.name) + "\n")
+file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
+file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
 file.write("USE ARCN_Sheep \n")
 file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.write("SET QUOTED_IDENTIFIER ON\n\n")
 file.write("\n-- insert the tracklog lines from " + layer + " -----------------------------------------------------------\n")
 
 fieldsList = arcpy.ListFields(fc) #get the fields
@@ -555,97 +563,101 @@ arcpy.AddMessage('Done')
 
 
 
-
+## IMPORTANT NOTE:  This code was moved to a separate arcpy script because it was just too slow and clunky and SSMS choked
+## on the .sql file it output.  sqlcmd was hardly better.
 # NOTE: The code section for GPS Tracklog is commented out below because the layer can potentially contain many thousands of
 # records which can take a long time to run.  Uncomment the code as needed.
 # GPS Tracklog ------------------------------------------------------------------------------------------------------------
-layer = "GPSPointsLog"
-fc = NPSdotGdbMxd + "/" + layer
-file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
-arcpy.AddMessage('Processing ' + layer + "...")
-
-# write some metadata to the sql script
-file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
-file.write("-- File generated " + executiontime + " by " + user + "\n")
-file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: \n-- sqlcmd /S YOURSQLSERVER\INSTANCENAME /i " + str(file.name) + "\n")
-file.write("USE ARCN_Sheep \n")
-file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
-file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
-file.write("DECLARE @SurveyID nvarchar(50) -- SurveyID of the record in the Surveys table to which the transects below will be related\n")
-file.write("SET @SurveyID = '" + SurveyID + "'\n")
-
-fieldsList = arcpy.ListFields(fc) #get the fields
-fields = [] # create an empty list
-#  loop through the fields and change the Shape column (containing geometry) into a token, add columns to the list
-for field in fieldsList:
-    if field.name == "Shape":
-        fields.append("Shape@")
-    elif field.name == "SHAPE":
-        fields.append("SHAPE@")
-    else:
-        fields.append(field.name)
-
-# get the data into a cursor so we can translate it into sql to insert into the sheep sql server database
-# loop through the cursor and save fields as variables to be used later in insert queries
-cursor = arcpy.da.SearchCursor(fc,fields,"",sr)
-for row in cursor:
-    OBJECTID = row[0]
-    SHAPE = row[1]
-    DATE_ = row[2]
-    ALTITUDE = row[3]
-    LATITUDE = row[4]
-    LONGITUDE = row[5]
-    XCOORD = row[6]
-    YCOORD = row[7]
-    PDOP = row[8]
-    PLANESPD = row[9]
-    TIME_ = row[10]
-    GeneratedSurveyID = row[11]
-    PILOTLNAM = row[12]
-    AIRCRAFT = row[13]
-    HitDate =  DATE_ + " " + TIME_
-
-    if not SHAPE is None:
-        WKT = SHAPE.WKT
-    else:
-        WKT = "NULL"
-    geog = "geography::STGeomFromText('" + WKT + "', " + str(epsg) + ")"
-
-    # build an insert query
-    # notes:
-    # GPSModel,Source, SourceFileName, TracksFileDirectory and Comment don't appear in NPS.gdb
-    # Most of the time GPS track logs will use point features.  If the tracklog is a line feature then
-    # modify the script to put the line into LineFeature instead of PointFeature
-    insertquery = "INSERT INTO GPSTracks(" + \
-        "PilotName," + \
-        "CaptureDate," + \
-        "GPSModel," + \
-        "Altitude," + \
-        "Source," + \
-        "SourceFileName," + \
-        "TracksFileDirectory," + \
-        "Comment," + \
-        "PointFeature," + \
-        "SurveyID" + \
-        ")" + \
-        "VALUES(" + \
-        fixArcGISNull(PILOTLNAM, True,False) +  \
-        "," + fixArcGISNull(HitDate, True, False)  + \
-        ", NULL" + \
-        "," + fixArcGISNull(str(ALTITUDE), False, True) + \
-        ",'" + fc + "'" + \
-        ",'" + fc + "'" + \
-        ", NULL" + \
-        "," + fixArcGISNull(str(Comments), True, False) + \
-        "," + geog  + \
-        ",@SurveyID" + \
-        ");\n"
-
-    file.write(insertquery) # write the query to the output .sql file
-
-# close the output file
-file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
-file.close()
+# layer = "GPSPointsLog"
+# fc = NPSdotGdbMxd + "/" + layer
+# file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
+# arcpy.AddMessage('Processing ' + layer + "...")
+#
+# # write some metadata to the sql script
+# file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
+# file.write("-- File generated " + executiontime + " by " + user + "\n")
+# file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
+# file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
+# file.write("USE ARCN_Sheep \n")
+# file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+# file.write("SET QUOTED_IDENTIFIER ON\n\n")
+# file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
+#
+# fieldsList = arcpy.ListFields(fc) #get the fields
+# fields = [] # create an empty list
+# #  loop through the fields and change the Shape column (containing geometry) into a token, add columns to the list
+# for field in fieldsList:
+#     if field.name == "Shape":
+#         fields.append("Shape@")
+#     elif field.name == "SHAPE":
+#         fields.append("SHAPE@")
+#     else:
+#         fields.append(field.name)
+#
+# # get the data into a cursor so we can translate it into sql to insert into the sheep sql server database
+# # loop through the cursor and save fields as variables to be used later in insert queries
+# cursor = arcpy.da.SearchCursor(fc,fields,"",sr)
+# for row in cursor:
+#     OBJECTID = row[0]
+#     SHAPE = row[1]
+#     DATE_ = row[2]
+#     ALTITUDE = row[3]
+#     LATITUDE = row[4]
+#     LONGITUDE = row[5]
+#     XCOORD = row[6]
+#     YCOORD = row[7]
+#     PDOP = row[8]
+#     PLANESPD = row[9]
+#     TIME_ = row[10]
+#     GeneratedSurveyID = row[11]
+#     PILOTLNAM = row[12]
+#     AIRCRAFT = row[13]
+#     HitDate =  DATE_ + " " + TIME_
+#
+#     if not SHAPE is None:
+#         WKT = SHAPE.WKT
+#     else:
+#         WKT = "NULL"
+#     geog = "geography::STGeomFromText('" + WKT + "', " + str(epsg) + ")"
+#
+#     # build an insert query
+#     # notes:
+#     # GPSModel,Source, SourceFileName, TracksFileDirectory and Comment don't appear in NPS.gdb
+#     # Most of the time GPS track logs will use point features.  If the tracklog is a line feature then
+#     # modify the script to put the line into LineFeature instead of PointFeature
+#     insertquery = "INSERT INTO GPSTracks(" + \
+#         "PilotName," + \
+#         "CaptureDate," + \
+#         "GPSModel," + \
+#         "Altitude," + \
+#         "Source," + \
+#         "SourceFileName," + \
+#         "TracksFileDirectory," + \
+#         "Comment," + \
+#         "PointFeature," + \
+#         "SurveyID" + \
+#         ")" + \
+#         "VALUES(" + \
+#         fixArcGISNull(PILOTLNAM, True,False) +  \
+#         "," + fixArcGISNull(HitDate, True, False)  + \
+#         ", NULL" + \
+#         "," + fixArcGISNull(str(ALTITUDE), False, True) + \
+#         ",'" + fc + "'" + \
+#         ",'" + fc + "'" + \
+#         ", NULL" + \
+#         "," + fixArcGISNull(str(Comments), True, False) + \
+#         "," + geog  + \
+#         ",'" + SurveyID + "'" + \
+#         ");\n"
+#
+#     # only write out the query if we have a geometry
+#     if not WKT == 'NULL':
+#         file.write('PRINT ' + insertquery + ';\n')
+#         file.write(insertquery) # write the query to the output .sql file
+#
+# # close the output file
+# file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+# file.close()
 
 
 
@@ -659,9 +671,11 @@ file.close()
 # # write some metadata to the sql script
 # file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
 # file.write("-- File generated " + executiontime + " by " + user + "\n")
-# file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: \n-- sqlcmd /S YOURSQLSERVER\INSTANCENAME /i " + str(file.name) + "\n")
+# file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
+# file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
 # file.write("USE ARCN_Sheep \n")
 # file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+# file.write("SET QUOTED_IDENTIFIER ON\n\n")
 # file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
 #
 # fieldsList = arcpy.ListFields(fc) #get the fields
@@ -724,9 +738,11 @@ arcpy.AddMessage('Processing ' + layer + "...")
 # write some metadata to the sql script
 file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
 file.write("-- File generated " + executiontime + " by " + user + "\n")
-file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt: \n-- sqlcmd /S YOURSQLSERVER\INSTANCENAME /i " + str(file.name) + "\n")
+file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
+file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
 file.write("USE ARCN_Sheep \n")
 file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.write("SET QUOTED_IDENTIFIER ON\n\n")
 file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
 file.write("DECLARE @SurveyID nvarchar(50) -- SurveyID of the record in the Surveys table to which the transects below will be related\n")
 file.write("SET @SurveyID = '" + SurveyID + "'\n")
@@ -770,7 +786,5 @@ arcpy.AddMessage("Finished processing " + NPSdotGdbMxd)
 arcpy.AddMessage("Input geodatabase: " + NPSdotGdbMxd)
 arcpy.AddMessage("Output directory: " + sqlscriptpath)
 arcpy.AddMessage("SurveyID: " + SurveyID)
-
 arcpy.AddMessage("")
 arcpy.AddMessage("Your SQL insert query scripts are available at " + sqlscriptpath.replace("/","\\"))
-
