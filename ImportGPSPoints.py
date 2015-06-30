@@ -8,6 +8,7 @@
 
 import arcpy # import the arcpy library
 import pyodbc # import pyodbc library to allow database connections
+import os # operating system functions
 
 # ArcToolbox parameters --------------------------------------------
 NPSdotGdbMxd = arcpy.GetParameterAsText(0) # path to the NPS.gdb
@@ -67,6 +68,31 @@ layer = "GPSPointsLog"
 fc = NPSdotGdbMxd + "/" + layer
 arcpy.AddMessage('Processing ' + layer + "...")
 
+# open a connection to the sql server
+connection = pyodbc.connect(connectionstring)
+sqlcursor = connection.cursor()# get a cursor
+
+# create a log file
+# Supply a directory to output the sql scripts to, the scripts will be named according to the layer they came from
+logfilepath = os.path.dirname(NPSdotGdbMxd) + '/'
+file = open(logfilepath + 'ImportGPSPointsLog.txt', "w")
+# gather some metadata to put in the log file
+# current time
+import time
+ow = time.strftime("%c") # date and time
+executiontime = time.strftime("%c")
+# username
+import getpass
+user = getpass.getuser()
+file.write('ImportGPSPoints.py Log File\n')
+file.write(user + ' ' + executiontime + '\n')
+file.write('NPS.gdb: ' + NPSdotGdbMxd + '\n')
+file.write('Server: ' + server + '\n')
+file.write('Database: ' + database + '\n')
+file.write('SurveyID: ' + SurveyID + '\n')
+file.write('Connection string: ' + connectionstring + '\n' )
+file.write('/n')
+
 fieldsList = arcpy.ListFields(fc) #get the fields
 fields = [] # create an empty list
 #  loop through the fields and change the Shape column (containing geometry) into a token, add columns to the list
@@ -96,8 +122,8 @@ for row in cursor:
     PLANESPD = row[9]
     TIME_ = row[10]
     GeneratedSurveyID = row[11]
-    PILOTLNAM = row[12]
-    AIRCRAFT = row[13]
+    PILOTLNAM = 'Unknown' #row[12]
+    AIRCRAFT = 'Unknown' #row[13]
     HitDate =  DATE_ + " " + TIME_
 
     if not SHAPE is None:
@@ -113,6 +139,7 @@ for row in cursor:
     # modify the script to put the line into LineFeature instead of PointFeature
     insertquery = "INSERT INTO GPSTracks(" + \
         "PilotName," + \
+        "TailNo," + \
         "CaptureDate," + \
         "GPSModel," + \
         "Altitude," + \
@@ -124,8 +151,9 @@ for row in cursor:
         "SurveyID" + \
         ")" + \
         "VALUES(" + \
-        fixArcGISNull(PILOTLNAM, True,False) +  \
-        "," + fixArcGISNull(HitDate, True, False)  + \
+        "'" + fixArcGISNull(PILOTLNAM,False,False) + "'" + \
+        ",'" + fixArcGISNull(AIRCRAFT, False,False) + "'" + \
+        ",'" + fixArcGISNull(HitDate, False, False) + "'" + \
         ", NULL" + \
         "," + fixArcGISNull(str(ALTITUDE), False, True) + \
         ",'" + fc + "'" + \
@@ -134,27 +162,26 @@ for row in cursor:
         ", NULL" + \
         "," + geog  + \
         ",'" + SurveyID + "'" + \
-        ");\n"
+        ");"
 
 
 
     # only write out the query if we have a geometry
     if not WKT == 'NULL' :
-        # open a connection to the sql server
-        connection = pyodbc.connect(connectionstring)
-        # get a cursor
-        sqlcursor = connection.cursor()
-
         # try to execute the insert query, if it fails report why
         try:
             sqlcursor.execute(insertquery)
             sqlcursor.commit()
-            arcpy.AddMessage('Row: ' + str(i) + ' ' + insertquery)
+            msg = 'Success|Row: ' + str(i) + '|' + insertquery + '|\n'
+            arcpy.AddMessage(msg)
+            file.write(msg)
         except Exception as ex:
-            arcpy.AddMessage('****** FAILED, Row: ' + str(i) + '. ' + str(ex) + ' ' + insertquery)
+            msg = 'FAILED|Row: ' + str(i) + '|' + insertquery + '|' + str(ex) + '\n'
+            arcpy.AddMessage(msg)
             failedquerycount = failedquerycount + 1
     i = i + 1
 
 # report done
 arcpy.AddMessage('Done')
-arcpy.AddMessage(failedquerycount + ' queries failed to execute')
+arcpy.AddMessage(str(failedquerycount) + ' queries failed to execute')
+arcpy.AddMessage('\nLog file available at ' + file.name + '\n')
