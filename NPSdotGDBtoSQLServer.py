@@ -39,7 +39,6 @@ sqlscriptpath = os.path.dirname(NPSdotGdbMxd) + '/'
 # e.g. the Itkillik 2011 Survey's SurveyID is '1AC66891-5D1E-4749-B962-40AB1BCA577F'
 # Contact the Network data manager for this value
 SurveyID = arcpy.GetParameterAsText(1)
-
 # -----------------------------------------------------------------------------
 
 # echo the parameters
@@ -65,7 +64,8 @@ user = getpass.getuser()
 
 
 # function fixArcGISNullString
-# accepts: str, String to process. quote, Boolean, whether to surround the returned string with single quotes
+# accepts: str, String to process. quote, Boolean, whether to surround the returned string with single quotes, nullToZero,
+# whether to convert nulls to zeroes
 # returns: String
 # purpose: ArcGIS is all over the place with null values, sometimes returning blank strings, other times 'None' or '<Null>'
 # These values won't work for SQL so we need look at the value of str and determine if it should be a NULL or not.
@@ -108,6 +108,7 @@ file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field 
 file.write("-- File generated " + executiontime + " by " + user + "\n")
 file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
 file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
+file.write("USE ARCN_Sheep \n")
 file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
 file.write("SET QUOTED_IDENTIFIER ON\n\n")
 file.write("\n-- insert the generated transects from " + layer + " -----------------------------------------------------------\n")
@@ -247,6 +248,7 @@ file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field 
 file.write("-- File generated " + executiontime + " by " + user + "\n")
 file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
 file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
+file.write("USE ARCN_Sheep \n")
 file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
 file.write("SET QUOTED_IDENTIFIER ON\n\n")
 file.write("\n-- insert the generated transects from " + layer + " -----------------------------------------------------------\n")
@@ -368,7 +370,9 @@ for row in cursor:
     PCTCOVER = row[6]
     PCTSNOW = row[7]
     DATE_ = row[8]
-    ALTITUDE = row[9] * 0.3048 # silly units to standard units
+    ALTITUDE = float(fixArcGISNull(str(row[9]), False, True))
+    print(ALTITUDE)
+    ALTITUDE = float(ALTITUDE) * 0.3048 # silly units to standard units
     LATITUDE = row[10]
     LONGITUDE = row[11]
     XCOORD = row[12]
