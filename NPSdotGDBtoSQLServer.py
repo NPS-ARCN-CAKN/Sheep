@@ -371,14 +371,13 @@ for row in cursor:
     PCTSNOW = row[7]
     DATE_ = row[8]
     ALTITUDE = float(fixArcGISNull(str(row[9]), False, True))
-    print(ALTITUDE)
     ALTITUDE = float(ALTITUDE) * 0.3048 # silly units to standard units
     LATITUDE = row[10]
     LONGITUDE = row[11]
     XCOORD = row[12]
     YCOORD = row[13]
     PDOP = row[14]
-    PLANESPD = row[15]
+    PLANESPD = float(fixArcGISNull(str(row[15]), False, True))
     TIME_ = row[16]
     GeneratedSurveyID = row[17]
     TransectID = row[18]
@@ -568,7 +567,137 @@ arcpy.AddMessage('Done')
 
 
 
-# on the .sql file it output.  sqlcmd was hardly better.
+
+
+
+
+# Buffers ------------------------------------------------------------------------------------------------------------
+# NOTE: Buffers are ordinarily in a shapefile instead of NPS.gdb.  Uncomment the section below if they happen to be in the gdb.
+layer = "Buffer_Final" # standard name for the buffers layer
+fc = NPSdotGdbMxd + "/" + layer
+file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
+arcpy.AddMessage('Processing ' + layer + "...")
+
+# write some metadata to the sql script
+file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
+file.write("-- File generated " + executiontime + " by " + user + "\n")
+file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
+file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
+file.write("USE ARCN_Sheep \n")
+file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.write("SET QUOTED_IDENTIFIER ON\n\n")
+file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
+
+fieldsList = arcpy.ListFields(fc) #get the fields
+fields = [] # create an empty list
+#  loop through the fields and change the Shape column (containing geometry) into a token, add columns to the list
+for field in fieldsList:
+    print field.name
+    if field.name == "SHAPE":
+        fields.append("SHAPE@")
+    elif field.name == "Shape":
+        fields.append("Shape@")
+    else:
+        fields.append(field.name)
+
+# get the data into a cursor so we can translate it into sql to insert into the sheep sql server database
+# loop through the cursor and save fields as variables to be used later in insert queries
+cursor = arcpy.da.SearchCursor(fc,fields,"",sr)
+for row in cursor:
+    OBJECTID = row[0]
+    SHAPE = row[1]
+    GeneratedTransectID = row[2]
+    # GeneratedSurveyID = row[0]
+
+    # build an insert query
+    insertquery = "INSERT INTO Buffers(" + \
+        "TransectID," + \
+        "GeneratedSurveyID," + \
+        "GeneratedTransectID," + \
+        "SegmentID," + \
+        "Obs1Dir," + \
+        "PolygonFeature," + \
+        "BufferFileDirectory" + \
+        ") VALUES(" + \
+        "(SELECT TransectID FROM Transect_or_Unit_Information WHERE (GeneratedTransectID = " + str(GeneratedTransectID) + "))," + \
+        "NULL," + \
+        "'" + str(GeneratedTransectID) + "'," + \
+        "NULL," + \
+        "NULL," + \
+        "geography::STGeomFromText('" + SHAPE.WKT + "', " + str(epsg) + ")," + \
+        "'" + fc + "/" + layer + "'" + \
+        ");\n"
+
+    file.write(insertquery) # write the query to the output .sql file
+
+#  close the output file
+file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.close()
+arcpy.AddMessage('Done')
+
+
+
+
+# FlatAreas ------------------------------------------------------------------------------------------------------------
+layer = "FlatAreas"
+fc = NPSdotGdbMxd + "/" + layer
+file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
+arcpy.AddMessage('Processing ' + layer + "...")
+
+# write some metadata to the sql script
+file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
+file.write("-- File generated " + executiontime + " by " + user + "\n")
+file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
+file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
+file.write("USE ARCN_Sheep \n")
+file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.write("SET QUOTED_IDENTIFIER ON\n\n")
+file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
+file.write("DECLARE @SurveyID nvarchar(50) -- SurveyID of the record in the Surveys table to which the transects below will be related\n")
+file.write("SET @SurveyID = '" + SurveyID + "'\n")
+
+
+fieldsList = arcpy.ListFields(fc) #get the fields
+fields = [] # create an empty list
+#  loop through the fields and change the Shape column (containing geometry) into a token, add columns to the list
+for field in fieldsList:
+    if field.name == "Shape":
+        fields.append("Shape@")
+    else:
+        fields.append(field.name)
+
+# get the data into a cursor so we can translate it into sql to insert into the sheep sql server database
+# loop through the cursor and save fields as variables to be used later in insert queries
+cursor = arcpy.da.SearchCursor(fc,fields,"",sr)
+for row in cursor:
+    Shape = row[1]
+    GeneratedSurveyID = row[6]
+
+    # build an insert query
+    insertquery = "INSERT INTO FlatAreas(" + \
+        "GeneratedSurveyID," + \
+        "SurveyID," + \
+        "PolygonFeature" + \
+        ") VALUES(" + \
+        "'" + str(GeneratedSurveyID) + "'," + \
+        "@SurveyID," + \
+        "geography::STGeomFromText('" + Shape.WKT + "', " + str(epsg) + ")" + \
+        ");\n"
+
+    file.write(insertquery) # write the query to the output .sql file
+
+#  close the output file
+file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
+file.close()
+
+
+
+
+
+
+
+
+
 # NOTE: The code section for GPS Tracklog is commented out below because the layer can potentially contain many thousands of
 # records which can take a long time to run.  Uncomment the code as needed.
 # GPS Tracklog ------------------------------------------------------------------------------------------------------------
@@ -669,125 +798,15 @@ file.close()
 
 
 
-# Buffers ------------------------------------------------------------------------------------------------------------
-# NOTE: Buffers are ordinarily in a shapefile instead of NPS.gdb.  Uncomment the section below if they happen to be in the gdb.
-# layer = "Buffer_Itkillik"
-# fc = NPSdotGdbMxd + "/" + layer
-# file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
-#arcpy.AddMessage('Processing ' + layer + "...")
-
-# # write some metadata to the sql script
-# file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
-# file.write("-- File generated " + executiontime + " by " + user + "\n")
-# file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
-# file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
-# file.write("USE ARCN_Sheep \n")
-# file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
-# file.write("SET QUOTED_IDENTIFIER ON\n\n")
-# file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
-#
-# fieldsList = arcpy.ListFields(fc) #get the fields
-# fields = [] # create an empty list
-# #  loop through the fields and change the Shape column (containing geometry) into a token, add columns to the list
-# for field in fieldsList:
-#     if field.name == "SHAPE":
-#         fields.append("SHAPE@")
-#     else:
-#         fields.append(field.name)
-#
-# # get the data into a cursor so we can translate it into sql to insert into the sheep sql server database
-# # loop through the cursor and save fields as variables to be used later in insert queries
-# cursor = arcpy.da.SearchCursor(fc,fields,"",sr)
-# for row in cursor:
-#     GeneratedSurveyID = row[0]
-#     GeneratedTransectID = row[1]
-#     SegmentID = row[2]
-#     Obs1Dir = row[3]
-#     SHAPE = row[4]
-#     OBJECTID = row[5]
-#     SHAPE_Length = row[6]
-#     SHAPE_Area = row[7]
-#
-#     # build an insert query
-#     insertquery = "INSERT INTO Buffers(" + \
-#         "TransectID," + \
-#         "GeneratedSurveyID," + \
-#         "GeneratedTransectID," + \
-#         "SegmentID," + \
-#         "Obs1Dir," + \
-#         "PolygonFeature," + \
-#         "BufferFileDirectory" + \
-#         ") VALUES(" + \
-#         "(SELECT TransectID FROM Transect_or_Unit_Information WHERE (GeneratedTransectID = " + str(GeneratedTransectID) + "))," + \
-#         "'" + str(GeneratedSurveyID) + "'," + \
-#         "'" + str(GeneratedTransectID) + "'," + \
-#         "'" + str(SegmentID) + "'," + \
-#         "'" + Obs1Dir + "'," + \
-#         "geography::STGeomFromText('" + SHAPE.WKT + "', " + str(epsg) + ")," + \
-#         "'" + fc + "/" + layer + "'" + \
-#         ");\n"
-#
-#     file.write(insertquery) # write the query to the output .sql file
-#
-# #  close the output file
-# file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
-# file.close()
-# arcpy.AddMessage('Done')
 
 
 
 
-# FlatAreas ------------------------------------------------------------------------------------------------------------
-layer = "FlatAreas"
-fc = NPSdotGdbMxd + "/" + layer
-file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
-arcpy.AddMessage('Processing ' + layer + "...")
-
-# write some metadata to the sql script
-file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
-file.write("-- File generated " + executiontime + " by " + user + "\n")
-file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
-file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
-file.write("USE ARCN_Sheep \n")
-file.write("BEGIN TRANSACTION -- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
-file.write("SET QUOTED_IDENTIFIER ON\n\n")
-file.write("\n-- insert the GPS track points from " + layer + " -----------------------------------------------------------\n")
-file.write("DECLARE @SurveyID nvarchar(50) -- SurveyID of the record in the Surveys table to which the transects below will be related\n")
-file.write("SET @SurveyID = '" + SurveyID + "'\n")
 
 
-fieldsList = arcpy.ListFields(fc) #get the fields
-fields = [] # create an empty list
-#  loop through the fields and change the Shape column (containing geometry) into a token, add columns to the list
-for field in fieldsList:
-    if field.name == "Shape":
-        fields.append("Shape@")
-    else:
-        fields.append(field.name)
 
-# get the data into a cursor so we can translate it into sql to insert into the sheep sql server database
-# loop through the cursor and save fields as variables to be used later in insert queries
-cursor = arcpy.da.SearchCursor(fc,fields,"",sr)
-for row in cursor:
-    Shape = row[1]
-    GeneratedSurveyID = row[6]
 
-    # build an insert query
-    insertquery = "INSERT INTO FlatAreas(" + \
-        "GeneratedSurveyID," + \
-        "SurveyID," + \
-        "PolygonFeature" + \
-        ") VALUES(" + \
-        "'" + str(GeneratedSurveyID) + "'," + \
-        "@SurveyID," + \
-        "geography::STGeomFromText('" + Shape.WKT + "', " + str(epsg) + ")" + \
-        ");\n"
 
-    file.write(insertquery) # write the query to the output .sql file
-
-#  close the output file
-file.write("\n-- Do not forget to COMMIT or ROLLBACK the changes after executing or the database will be in a locked state \n")
-file.close()
 
 arcpy.AddMessage("Done!")
 arcpy.AddMessage("Finished processing " + NPSdotGdbMxd)
