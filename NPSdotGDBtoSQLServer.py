@@ -162,13 +162,13 @@ for row in cursor:
     LABEL_M = str(row[25])
     LABEL_FT = str(row[26])
     GeneratedSurveyID = str(row[27])
-    Shape_Length = str(row[28])
+    Shape_Length = str(row[28]) # note: 2014 gaar survey this column was further down causing mismatches here
     BATCH_ID = str(row[29])
     Flown = str(row[30])
     TransectID = str(row[31])
     Aircraft = str(row[32])
     OBSLNAM1 = str(row[33])
-    OBSLNAM2 = 'NULL' # str(row[34]) --there were misplaced comments entered here, concatenated with cntr_note
+    OBSLNAM2 = str(row[34])
     FLOWNDATE = str(row[35])
     PILOTLNAM = str(row[36])
     CLOUDCOVER = row[37] # don't use the str() function around this because the unicode '1/2' character the GeoNorth guys wrote into the data collection app's picklist bombs Python
@@ -607,7 +607,7 @@ for row in cursor:
     OBJECTID = row[0]
     SHAPE = row[1]
     GeneratedTransectID = row[2]
-    # GeneratedSurveyID = row[0]
+    GeneratedSurveyID = layer + "-" + str(GeneratedTransectID) # for lack of anything better
 
     # build an insert query
     insertquery = "INSERT INTO Buffers(" + \
@@ -619,8 +619,8 @@ for row in cursor:
         "PolygonFeature," + \
         "BufferFileDirectory" + \
         ") VALUES(" + \
-        "(SELECT TransectID FROM Transect_or_Unit_Information WHERE (GeneratedTransectID = " + str(GeneratedTransectID) + "))," + \
-        "NULL," + \
+        "(SELECT TransectID FROM Transect_or_Unit_Information WHERE (GeneratedTransectID = " + str(GeneratedTransectID) + ") And (SurveyID = '" + SurveyID + "'))," + \
+        "'" + str(GeneratedSurveyID) + "'," + \
         "'" + str(GeneratedTransectID) + "'," + \
         "NULL," + \
         "NULL," + \
@@ -707,8 +707,12 @@ file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
 arcpy.AddMessage('Processing ' + layer + "...")
 
 # write some metadata to the sql script
+
 file.write("-- Insert queries to transfer data from ARCN Sheep monitoring field geodatabase " + NPSdotGdbMxd + " into ARCN_Sheep database\n")
 file.write("-- File generated " + executiontime + " by " + user + "\n")
+file.write("*************** \n")
+file.write("WARNING: The GPS points layer generates extremely large files that almost always cause Sql Server Management Studio to bog down and crash. \n")
+file.write("*************** \n")
 file.write("-- If this file is too big to run in Sql Server Management Studio then run from a Windows Power Shell prompt:\n")
 file.write("-- sqlcmd /S SERVER\INSTANCE /i \"" + str(file.name) + "\"\n")
 file.write("USE ARCN_Sheep \n")
