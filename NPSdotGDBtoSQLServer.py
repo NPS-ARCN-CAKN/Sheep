@@ -1,4 +1,4 @@
- # NPSdotGDBtoSQLServer
+# NPSdotGDBtoSQLServer
 # Purpose: A Python script used by the National Park Service Arctic and Central Alaska Networks to export aerial sheep survey
 # field data from an ESRI geodatabase (NPS.gdb) into a series of SQL scripts containing insert queries.  The
 # generated scripts can be executed against the main sheep monitoring Sql Server database (ARCN_Sheep) to import the field data.
@@ -9,11 +9,9 @@
 # When executed, the insert queries will insert a record in the appropriate database table.
 
 # Notes on using the script:
-# This script is a template -- you must supply your own file paths and modify the script to fit your needs.
 # This script does not interact with the ARCN_Sheep database in any way; it just exports .sql scripts, so there is
 # no danger of database corruption to test-running the script.
-# Execute the script through the Python window in ArcMap.
-# Be sure the user supplied # variables at the head of the script are modified correctly.
+# The script is designed to be run via an ArcGIS toolbox tool.
 # Ensure the column mappings from the geodatabase to Sql Server tables are correct.
 # Python requires forward slashes for directory delimiters contrary to Windows.  Replace '\' with '/' in any paths.
 # IMPORTANT NOTE: The SQL insert queries are wrapped in unclosed transaction statements (the transaction is started,
