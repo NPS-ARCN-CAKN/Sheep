@@ -24,6 +24,7 @@
 # import the arcpy library
 import arcpy
 import os
+import sys
 
 # USER MUST SUPPLY THE VARIABLES BELOW --------------------------------------------
 
@@ -134,6 +135,8 @@ cursor = arcpy.da.SearchCursor(fc,fields,"",sr)
 for row in cursor:
     OBJECTID_1 = row[0]
     Shape = row[1]
+    if Shape == "None" or Shape == "<Null>" or Shape == "NULL" or Shape == "":
+        sys.exit('ERROR: Script execution aborted at row ' + str(row) + '. Shape is required but is NULL')
     OBJECTID = row[2]
     PT_ID = str(row[3])
     PROJTD_X1 = str(row[4])
@@ -160,15 +163,31 @@ for row in cursor:
     LABEL_M = str(row[25])
     LABEL_FT = str(row[26])
     GeneratedSurveyID = str(row[27])
+    # if GeneratedSurveyID == "None" or GeneratedSurveyID == "<Null>" or GeneratedSurveyID == "NULL" or GeneratedSurveyID == "":
+    #     errormessage = 'ERROR: Script execution aborted at row ' + str(row) + '. GeneratedSurveyID is required but is NULL'
+    #     arcpy.AddMessage(errormessage)
+    #     sys.exit(errormessage)
     Shape_Length = str(row[28]) # note: 2014 gaar survey this column was further down causing mismatches here
     BATCH_ID = str(row[29])
     Flown = str(row[30])
     TransectID = str(row[31])
     Aircraft = str(row[32])
+    # if Aircraft == "None" or Aircraft == "<Null>" or Aircraft == "NULL" or Aircraft == "":
+    #     errormessage = 'ERROR: Script execution aborted at row ' + str(row) + '. Aircraft is required but is NULL'
+    #     arcpy.AddMessage(errormessage)
+    #     sys.exit(errormessage)
     OBSLNAM1 = str(row[33])
+    # if OBSLNAM1 == "None" or OBSLNAM1 == "<Null>" or OBSLNAM1 == "NULL" or OBSLNAM1 == "":
+    #     errormessage = 'ERROR: Script execution aborted at row ' + str(row) + '. OBSLNAM1 is required but is NULL'
+    #     arcpy.AddMessage(errormessage)
+    #     sys.exit(errormessage)
     OBSLNAM2 = str(row[34])
     FLOWNDATE = str(row[35])
     PILOTLNAM = str(row[36])
+    # if PILOTLNAM == "None" or PILOTLNAM == "<Null>" or PILOTLNAM == "NULL" or PILOTLNAM == "":
+    #     errormessage = 'ERROR: Script execution aborted at row ' + str(row) + '. PILOTLNAM is required but is NULL'
+    #     arcpy.AddMessage(errormessage)
+    #     sys.exit(errormessage)
     CLOUDCOVER = row[37] # don't use the str() function around this because the unicode '1/2' character the GeoNorth guys wrote into the data collection app's picklist bombs Python
     PRECIP = str(row[38])
     TURBINT = str(row[39])
@@ -179,6 +198,10 @@ for row in cursor:
 
     # we need to insert the feature into sql server as a geography item via the Well-Known Text representation of the feature
     GeneratedTransect = row[1].WKT
+    if GeneratedTransect == "None" or GeneratedTransect == "<Null>" or GeneratedTransect == "NULL" or GeneratedTransect == "":
+        errormessage = 'ERROR: Script execution aborted at row ' + str(row) + '. GeneratedTransect is required but is NULL'
+        arcpy.AddMessage(errormessage)
+        sys.exit(errormessage)
 
     # build an insert query
     insertquery = "INSERT INTO [ARCN_Sheep].[dbo].[Transect_or_Unit_Information](" + \
