@@ -37,8 +37,8 @@ SOPNumber  = arcpy.GetParameterAsText(5)# Number of the SOP that guided the data
 SOPVersion  = arcpy.GetParameterAsText(6)# Version of the SOP that guided the data collection
 # -----------------------------------------------------------------------------
 
-# Output SQL script file name
-OutputFile = WaypointsFile + '.sql' # directory to output the sql scripts
+# Output SQL script file
+OutputFile = WaypointsFile + '.sql'
 
 # echo the parameters
 arcpy.AddMessage("Input file: " + WaypointsFile + "\n")
