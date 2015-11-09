@@ -25,20 +25,20 @@ import arcpy
 import os
 
 # USER MUST SUPPLY THE VARIABLES BELOW --------------------------------------------
-TracklogFile = 'C:/Work/VitalSigns/ARCN-CAKN Dall Sheep/Data/2014/GAAR2014/Tracklogs/SH67Z_15Jul2014_Tracklog_Pts.shp' # arcpy.GetParameterAsText(0)# Supply a path to the tracklog shapefile
+TracklogFile = arcpy.GetParameterAsText(0)# Supply a path to the tracklog shapefile #
 #  Supply the SurveyID from the Surveys table
 # Tracklog will be related to this SurveyID in the sheep database
 # Contact the Network data manager or project leader for this value
-SurveyID = '6F83E7F3-72F3-40A4-96A6-8F15A05E6327' #arcpy.GetParameterAsText(1) # SurveyID
-PilotName = 'Sandy Hamilton' #arcpy.GetParameterAsText(2)# Pilot's name
-TailNo = 'NSH67Z' #arcpy.GetParameterAsText(3)# Aircraft tail number
-TracklogSource = 'PILOT GPS' #arcpy.GetParameterAsText(4)# Source of the GPS tracklog, usually 'Pilot GPS'
-SOPNumber  = 8 #arcpy.GetParameterAsText(5)# Number of the SOP that guided the data collection
-SOPVersion  = 0 #arcpy.GetParameterAsText(6)# Version of the SOP that guided the data collection
+SurveyID = arcpy.GetParameterAsText(1) # SurveyID
+PilotName = arcpy.GetParameterAsText(2)# Pilot's name
+TailNo = arcpy.GetParameterAsText(3)# Aircraft tail number
+TracklogSource = arcpy.GetParameterAsText(4)# Source of the GPS tracklog, usually 'Pilot GPS'
+SOPNumber  = arcpy.GetParameterAsText(5)# Number of the SOP that guided the data collection
+SOPVersion  = arcpy.GetParameterAsText(6)# Version of the SOP that guided the data collection
 # -----------------------------------------------------------------------------
 
-# Output SQL script file
-OutputFile = TracklogFile + '.sql'
+
+OutputFile = TracklogFile + '.sql'# SQL script file that will be written
 
 # echo the parameters
 arcpy.AddMessage("Input file: " + TracklogFile + "\n")
