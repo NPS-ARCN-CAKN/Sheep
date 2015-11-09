@@ -99,7 +99,7 @@ def fixArcGISNull(inputString, quoted, nullToZero):
 # EXPORT THE TRANSECTS ------------------------------------------------------------------------------------------------------------
 layer = "TrnOrig"
 fc = NPSdotGdbMxd + "/" + layer
-file = open(sqlscriptpath + 'Import_' + layer + "_FromNPS.gdb.sql", "w")
+file = open(sqlscriptpath +  layer + ".sql", "w")
 arcpy.AddMessage('Processing ' + layer + "...")
 
 # write some metadata to the sql script
